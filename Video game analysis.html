@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+
+<meta name="author" content="Andy Liu" />
+
+
+<title>Video Game Analysis</title>
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs && document.readyState && document.readyState === "complete") {
+   window.setTimeout(function() {
+      hljs.initHighlighting();
+   }, 0);
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+</style>
+
+
+
+<div class="container-fluid main-container">
+
+<!-- tabsets -->
+<script>
+$(document).ready(function () {
+  window.buildTabsets("section-TOC");
+});
+</script>
+
+<!-- code folding -->
+
+
+
+
+
+
+<div class="fluid-row" id="section-header">
+
+
+
+<h1 class="title toc-ignore">Video Game Analysis</h1>
+<h4 class="author"><em>Andy Liu</em></h4>
+
+</div>
+
+
+<div id="section-problem" class="section level2">
+<h2>Problem</h2>
+<p>As a video game company, we decide to launch a new game in 2017. In order to develop a successful game, we need to figure out three questions. What genre of the game should we create? What Platform should we use? Where should we release the game?</p>
+</div>
+<div id="section-data-cleaning" class="section level2">
+<h2>Data Cleaning</h2>
+<div id="section-fix-the-structure-of-the-data" class="section level3">
+<h3>Fix the structure of the data</h3>
+<p>First, Let’s take a look at the data.</p>
+<pre class="r"><code>data &lt;- read.csv(&quot;vgsales.csv&quot;, stringsAsFactors = F)
+dim(data)</code></pre>
+<pre><code>## [1] 16598    12</code></pre>
+<p>It has 16598 observation and 12 variables, but it should only contain 11 variables. There must be something wrong with the original data. Let take a look at it’s structure.</p>
+<pre class="r"><code>str(data)</code></pre>
+<pre><code>## &#39;data.frame&#39;:    16598 obs. of  12 variables:
+##  $ Rank        : int  1 2 3 4 5 6 7 8 9 10 ...
+##  $ Name        : chr  &quot;Wii Sports&quot; &quot;Super Mario Bros.&quot; &quot;Mario Kart Wii&quot; &quot;Wii Sports Resort&quot; ...
+##  $ Platform    : chr  &quot;Wii&quot; &quot;NES&quot; &quot;Wii&quot; &quot;Wii&quot; ...
+##  $ Year        : chr  &quot;2006&quot; &quot;1985&quot; &quot;2008&quot; &quot;2009&quot; ...
+##  $ Genre       : chr  &quot;Sports&quot; &quot;Platform&quot; &quot;Racing&quot; &quot;Sports&quot; ...
+##  $ Publisher   : chr  &quot;Nintendo&quot; &quot;Nintendo&quot; &quot;Nintendo&quot; &quot;Nintendo&quot; ...
+##  $ NA_Sales    : chr  &quot;41.49&quot; &quot;29.08&quot; &quot;15.85&quot; &quot;15.75&quot; ...
+##  $ EU_Sales    : num  29.02 3.58 12.88 11.01 8.89 ...
+##  $ JP_Sales    : num  3.77 6.81 3.79 3.28 10.22 ...
+##  $ Other_Sales : num  8.46 0.77 3.31 2.96 1 0.58 2.9 2.85 2.26 0.47 ...
+##  $ Global_Sales: num  82.7 40.2 35.8 33 31.4 ...
+##  $ X           : num  NA NA NA NA NA NA NA NA NA NA ...</code></pre>
+<pre class="r"><code>head(data)</code></pre>
+<pre><code>##   Rank                     Name Platform Year        Genre Publisher
+## 1    1               Wii Sports      Wii 2006       Sports  Nintendo
+## 2    2        Super Mario Bros.      NES 1985     Platform  Nintendo
+## 3    3           Mario Kart Wii      Wii 2008       Racing  Nintendo
+## 4    4        Wii Sports Resort      Wii 2009       Sports  Nintendo
+## 5    5 Pokemon Red/Pokemon Blue       GB 1996 Role-Playing  Nintendo
+## 6    6                   Tetris       GB 1989       Puzzle  Nintendo
+##   NA_Sales EU_Sales JP_Sales Other_Sales Global_Sales  X
+## 1    41.49    29.02     3.77        8.46        82.74 NA
+## 2    29.08     3.58     6.81        0.77        40.24 NA
+## 3    15.85    12.88     3.79        3.31        35.82 NA
+## 4    15.75    11.01     3.28        2.96        33.00 NA
+## 5    11.27     8.89    10.22        1.00        31.37 NA
+## 6     23.2     2.26     4.22        0.58        30.26 NA</code></pre>
+<p>The data has an extra variable called X. Let’s find the data where X is not missing.</p>
+<pre class="r"><code>head(filter(data, !is.na(X)))</code></pre>
+<pre><code>##    Rank                       Name Platform Year Genre Publisher
+## 1  7320                     Steins     Gate  PSV  2013 Adventure
+## 2  7765                     Steins     Gate  PSP  2011 Adventure
+## 3  9969 Hyperdimension Neptunia Re  Birth 3  PSV  2014    Action
+## 4 10383                   Robotics    Notes  PS3  2012 Adventure
+## 5 11135 Hyperdimension Neptunia Re  Birth 2  PSV  2014    Action
+## 6 11374                     Steins     Gate  PS3  2012 Adventure
+##                     NA_Sales EU_Sales JP_Sales Other_Sales Global_Sales
+## 1                      PQube     0.07     0.09        0.00         0.05
+## 2            Kadokawa Shoten     0.00     0.00        0.19         0.00
+## 3 Idea Factory International     0.07     0.01        0.00         0.03
+## 4                        5pb     0.00     0.00        0.11         0.00
+## 5 Idea Factory International     0.05     0.02        0.00         0.02
+## 6                      PQube     0.01     0.04        0.02         0.01
+##      X
+## 1 0.21
+## 2 0.19
+## 3 0.12
+## 4 0.11
+## 5 0.09
+## 6 0.08</code></pre>
+<p>It seems that the names of these games become two variables. Let’s fix this problem using dplyr packages.</p>
+<pre class="r"><code>#fix the problem
+fixeddata &lt;-
+  data %&gt;%
+    filter(!is.na(X)) %&gt;%
+    unite(Name, Name, Platform) %&gt;%
+    select(Name, Platform = Year, Year = Genre, Genre = Publisher, Publisher = NA_Sales, NA_Sales = EU_Sales, EU_Sales = JP_Sales, JP_Sales = Other_Sales, Other_Sales = Global_Sales, Global_Sales = X)
+str(fixeddata)</code></pre>
+<pre><code>## &#39;data.frame&#39;:    26 obs. of  10 variables:
+##  $ Name        : chr  &quot;Steins_Gate&quot; &quot;Steins_Gate&quot; &quot;Hyperdimension Neptunia Re_Birth 3&quot; &quot;Robotics_Notes&quot; ...
+##  $ Platform    : chr  &quot;PSV&quot; &quot;PSP&quot; &quot;PSV&quot; &quot;PS3&quot; ...
+##  $ Year        : chr  &quot;2013&quot; &quot;2011&quot; &quot;2014&quot; &quot;2012&quot; ...
+##  $ Genre       : chr  &quot;Adventure&quot; &quot;Adventure&quot; &quot;Action&quot; &quot;Adventure&quot; ...
+##  $ Publisher   : chr  &quot;PQube&quot; &quot;Kadokawa Shoten&quot; &quot;Idea Factory International&quot; &quot;5pb&quot; ...
+##  $ NA_Sales    : num  0.07 0 0.07 0 0.05 0.01 0 0 0 0 ...
+##  $ EU_Sales    : num  0.09 0 0.01 0 0.02 0.04 0 0 0 0 ...
+##  $ JP_Sales    : num  0 0.19 0 0.11 0 0.02 0.08 0.06 0.06 0.06 ...
+##  $ Other_Sales : num  0.05 0 0.03 0 0.02 0.01 0 0 0 0 ...
+##  $ Global_Sales: num  0.21 0.19 0.12 0.11 0.09 0.08 0.08 0.06 0.06 0.06 ...</code></pre>
+<pre class="r"><code>#replace the bad data with fixed data
+data &lt;- 
+  data %&gt;%
+    filter(is.na(X)) %&gt;%
+    select(-X, -Rank)
+data$NA_Sales &lt;- as.numeric(data$NA_Sales)
+data &lt;- bind_rows(data, fixeddata)
+str(data)</code></pre>
+<pre><code>## &#39;data.frame&#39;:    16598 obs. of  10 variables:
+##  $ Name        : chr  &quot;Wii Sports&quot; &quot;Super Mario Bros.&quot; &quot;Mario Kart Wii&quot; &quot;Wii Sports Resort&quot; ...
+##  $ Platform    : chr  &quot;Wii&quot; &quot;NES&quot; &quot;Wii&quot; &quot;Wii&quot; ...
+##  $ Year        : chr  &quot;2006&quot; &quot;1985&quot; &quot;2008&quot; &quot;2009&quot; ...
+##  $ Genre       : chr  &quot;Sports&quot; &quot;Platform&quot; &quot;Racing&quot; &quot;Sports&quot; ...
+##  $ Publisher   : chr  &quot;Nintendo&quot; &quot;Nintendo&quot; &quot;Nintendo&quot; &quot;Nintendo&quot; ...
+##  $ NA_Sales    : num  41.5 29.1 15.8 15.8 11.3 ...
+##  $ EU_Sales    : num  29.02 3.58 12.88 11.01 8.89 ...
+##  $ JP_Sales    : num  3.77 6.81 3.79 3.28 10.22 ...
+##  $ Other_Sales : num  8.46 0.77 3.31 2.96 1 0.58 2.9 2.85 2.26 0.47 ...
+##  $ Global_Sales: num  82.7 40.2 35.8 33 31.4 ...</code></pre>
+<p>All the data seems to be in the right place</p>
+</div>
+<div id="section-missing-value" class="section level3">
+<h3>Missing value</h3>
+<p>Notice that missing value are written as “N/a” in the dataset</p>
+<pre class="r"><code>data %&gt;%
+  filter(Name == &quot;N/A&quot;|Platform == &quot;N/A&quot;|Year == &quot;N/A&quot;|Genre == &quot;N/A&quot;|Publisher == &quot;N/A&quot;|NA_Sales == &quot;N/A&quot;|EU_Sales == &quot;N/A&quot;|JP_Sales == &quot;N/A&quot;|Other_Sales == &quot;N/A&quot;|Global_Sales == &quot;N/A&quot;) %&gt;%
+  summarize(n = n())</code></pre>
+<pre><code>##     n
+## 1 306</code></pre>
+<p>There are 306 missing value here. The missing value here are only 2% of the total number of data, so delete all these data will not have a huge impact to the final analysis.</p>
+<pre class="r"><code>data &lt;-
+  data %&gt;%
+    filter(!(Name == &quot;N/A&quot;|Platform == &quot;N/A&quot;|Year == &quot;N/A&quot;|Genre == &quot;N/A&quot;|Publisher == &quot;N/A&quot;|NA_Sales == &quot;N/A&quot;|EU_Sales == &quot;N/A&quot;|JP_Sales == &quot;N/A&quot;|Other_Sales == &quot;N/A&quot;|Global_Sales == &quot;N/A&quot;))</code></pre>
+</div>
+<div id="section-outliers" class="section level3">
+<h3>Outliers</h3>
+<pre class="r"><code>data %&gt;%
+  ggplot(aes(x=Genre, y=Global_Sales)) +
+  scale_y_continuous(limits = c(0,1.5)) +
+  geom_boxplot()</code></pre>
+<pre><code>## Warning: Removed 1239 rows containing non-finite values (stat_boxplot).</code></pre>
+<p><img src="file4203b864a02_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<p>Based on the boxplot we can see many outliers, but actually the difference of sales of games can be very large. For example, GTA may sales at the price at 200 dollars and lots of people will buy it, but some games made by small company may only sales for 20 dollars and people seldom buy them. Also, I’m not making machine learning models such as regression model or SVM model, I just want to describe the data and help the company to design the popular video games. So, I will not consder any of the points as the outliers. However, there are some obvious mistakes such as the dataset contains games after year 2017. These data should be considerd as outliers.</p>
+<pre class="r"><code>data &lt;- 
+  data %&gt;%
+    filter(Year &lt; 2017)</code></pre>
+<p>Now we get the cleaned dataset and ready to analyze.</p>
+</div>
+</div>
+<div id="section-the-current-situation-of-video-games" class="section level2">
+<h2>The current situation of video games</h2>
+<pre class="r"><code>data %&gt;%
+  group_by(Year) %&gt;%
+  summarize(SumGlobalSales = sum(Global_Sales), SumNASales = sum(NA_Sales), SumEUSales = sum(EU_Sales), SumJPSales = sum(JP_Sales), SumOtherSales = sum(Other_Sales)) %&gt;%
+  ggvis(x = ~Year, y = input_select(c(SumGlobalSales = &quot;SumGlobalSales&quot;, sumNASales = &quot;SumNASales&quot;, sumEUSales = &quot;SumEUSales&quot;, SumJPSales = &quot;SumJPSales&quot;, SumOtherSales = &quot;SumOtherSales&quot;), map = as.name)) %&gt;% 
+  layer_lines() %&gt;%
+  add_axis(&quot;x&quot;, properties = axis_props(labels = list(angle = 90)))</code></pre>
+<iframe data-deferred-src="app134732a4fee18f08b9256372c7f683f4/?w=&amp;__subapp__=1" width="672" height="550" class="shiny-frame shiny-frame-deferred"></iframe>
+<pre class="r"><code>data %&gt;%
+  group_by(Year) %&gt;%
+  summarize(SumGlobalSales = sum(Global_Sales), SumNASales = sum(NA_Sales), SumEUSales = sum(EU_Sales), SumJPSales = sum(JP_Sales), SumOtherSales = sum(Other_Sales)) %&gt;%
+  gather(area, sales, -Year) %&gt;%
+  ggplot(aes(x=Year, y=sales, col=area, group = area)) +
+  geom_point() +
+  geom_line() +
+  theme(axis.text.x = element_text(angle = 90))</code></pre>
+<p><img src="file4203b864a02_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
+<p>The sales of video games tends to decrease in Noth American, Europ, Japan and even global. We need to be careful about our design and make sure our video games can be successful in the market.</p>
+</div>
+<div id="section-which-genre-should-we-choose" class="section level2">
+<h2>Which genre should we choose</h2>
+<pre class="r"><code>data %&gt;%
+  group_by(Genre) %&gt;%
+  summarize(TotalSales = sum(Global_Sales)) %&gt;%
+  ggplot(aes(x=Genre, y=TotalSales)) +
+  geom_bar(aes(fill = Genre), stat = &quot;identity&quot;, show.legend = F)</code></pre>
+<p><img src="file4203b864a02_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
+<p>We can see that Action games sale the best in the past 20 years. Sports game and shooter game come after. But we also need to consider about which type of games is popular in recent years. Maybe Action games was popular in the past but not popular any more. Let’s take a look at the sales of each genre per year and find the trend,</p>
+<pre class="r"><code>data %&gt;%
+  group_by(Genre, Year) %&gt;%
+  summarize(TotalSales = sum(Global_Sales)) %&gt;%
+  ggplot(aes(x=Year, y=TotalSales)) + 
+  geom_line(aes(group = 1)) +
+  scale_x_discrete(breaks = NULL) +
+  facet_wrap(~Genre)</code></pre>
+<p><img src="file4203b864a02_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
+<p>It turns out every genre face the problem of decreasing revenue. This is because the total sales is decreasing. To better understand which type of games have the potential to dominate the video game market, we need to look at the percentage of revenue for each type of game (also known as market share)</p>
+<pre class="r"><code>SaleByYear &lt;- 
+  data %&gt;%
+    group_by(Genre, Year) %&gt;%
+    summarize(TotalSales = sum(Global_Sales)) %&gt;%
+    group_by(Year)%&gt;%
+    summarize(TS_Y = sum(TotalSales))
+data %&gt;%
+  group_by(Genre, Year) %&gt;%
+  summarize(TotalSales = sum(Global_Sales)) %&gt;%
+  left_join(SaleByYear, by = &quot;Year&quot;) %&gt;%
+  mutate(SalesPercentage = TotalSales/TS_Y) %&gt;%
+  ggplot(aes(x=Year, y=SalesPercentage)) + 
+  geom_line(aes(group = 1)) + 
+  scale_x_discrete(breaks = NULL) +
+  facet_wrap(~Genre)</code></pre>
+<p><img src="file4203b864a02_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
+<p>This plot shows that Shooter and Sports game’s market share are growing. Other game’s market share are reducing. Even though Action game’s market share is reducing, it still has a large market share. So based on the market share and total sales in the past 20 years, sports game is the best choice.</p>
+</div>
+<div id="section-which-platform-should-we-choose" class="section level2">
+<h2>Which platform should we choose</h2>
+<pre class="r"><code>data %&gt;%
+  group_by(Platform) %&gt;%
+  summarize(TotalSales = sum(Global_Sales)) %&gt;%
+  ggplot(aes(x=Platform, y=TotalSales)) +
+  geom_bar(aes(fill = Platform), stat = &quot;identity&quot;, show.legend = F) +
+  theme(axis.text.x = element_text(angle = 90))</code></pre>
+<p><img src="file4203b864a02_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
+<pre class="r"><code>SaleByYear &lt;- 
+  data %&gt;%
+  group_by(Platform, Year) %&gt;%
+  summarize(TotalSales = sum(Global_Sales)) %&gt;%
+  group_by(Year)%&gt;%
+  summarize(TS_Y = sum(TotalSales))
+data %&gt;%
+  group_by(Platform, Year) %&gt;%
+  summarize(TotalSales = sum(Global_Sales)) %&gt;%
+  left_join(SaleByYear, by = &quot;Year&quot;) %&gt;%
+  mutate(SalesPercentage = TotalSales/TS_Y) %&gt;%
+  ggplot(aes(x=Year, y=SalesPercentage)) + 
+  geom_line(aes(group = 1)) + 
+  scale_x_discrete(breaks = NULL) +
+  facet_wrap(~Platform)</code></pre>
+<pre><code>## geom_path: Each group consists of only one observation. Do you need to
+## adjust the group aesthetic?
+## geom_path: Each group consists of only one observation. Do you need to
+## adjust the group aesthetic?
+## geom_path: Each group consists of only one observation. Do you need to
+## adjust the group aesthetic?</code></pre>
+<p><img src="file4203b864a02_files/figure-html/unnamed-chunk-15-2.png" width="672" /></p>
+<p>As we can see in the plot, although games launched on PS2 created a lot of revenue in the past 20 years, PS2’s market share is decreasing. It is not wise to develop games launched on PS2. Some of the platform are extinct such as GB, DC, GBA, etc. We can find that PS4’s market share grows sharply, it has the potential to dominate the market. Also PC has a very flat market share, which means games launched on PC have a low risk of losing money.</p>
+<p>So, we decide to develop two version of the game. One is luanched on the PS4, the other is launched on PC.</p>
+</div>
+<div id="section-where-should-we-launch-the-games" class="section level2">
+<h2>Where should we launch the games</h2>
+<pre class="r"><code>data %&gt;%
+  select(NA_Sales, EU_Sales, JP_Sales, Other_Sales) %&gt;%
+  gather(Area, Sales, NA_Sales:Other_Sales) %&gt;%
+  group_by(Area) %&gt;%
+  summarize(TotalSales = sum(Sales)) %&gt;%
+  ggplot(aes(x=Area, y=TotalSales)) + 
+  geom_bar(aes(fill = Area), stat = &quot;identity&quot;, show.legend = F) +
+  ggtitle(&quot;Sales in different area&quot;)</code></pre>
+<p><img src="file4203b864a02_files/figure-html/unnamed-chunk-16-1.png" width="672" /></p>
+<p>People in the North America are more willing to buy games than in other area.</p>
+</div>
+<div id="section-colusion" class="section level2">
+<h2>Colusion</h2>
+<p>Based on the exploration of the video game dataset. Sports game launched on PC and PS4 firt releasing in North America will be the best choice for a video game company.</p>
+</div>
+
+
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
