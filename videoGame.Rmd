@@ -1,0 +1,209 @@
+---
+title: "Video Game Analysis"
+author: "Andy Liu"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r include=FALSE}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(ggvis)
+library(plotly)
+```
+## Problem
+As a video game company, we decide to launch a new game in 2017. In order to develop a successful game, we need to figure out three questions. What genre of the game should we create? What Platform should we use? Where should we release the game?
+
+## Data Cleaning
+
+### Fix the structure of the data
+
+First, Let's take a look at the data.
+
+```{r}
+data <- read.csv("vgsales.csv", stringsAsFactors = F)
+dim(data)
+```
+
+It has 16598 observation and 12 variables, but it should only contain 11 variables. There must be something wrong with the original data. Let take a look at it's structure.
+
+```{r}
+str(data)
+head(data)
+```
+
+The data has an extra variable called X. Let's find the data where X is not missing.
+
+```{r}
+head(filter(data, !is.na(X)))
+```
+It seems that the names of these games become two variables. Let's fix this problem using dplyr packages.
+ 
+```{r}
+#fix the problem
+fixeddata <-
+  data %>%
+    filter(!is.na(X)) %>%
+    unite(Name, Name, Platform) %>%
+    select(Name, Platform = Year, Year = Genre, Genre = Publisher, Publisher = NA_Sales, NA_Sales = EU_Sales, EU_Sales = JP_Sales, JP_Sales = Other_Sales, Other_Sales = Global_Sales, Global_Sales = X)
+str(fixeddata)
+
+#replace the bad data with fixed data
+data <- 
+  data %>%
+    filter(is.na(X)) %>%
+    select(-X, -Rank)
+data$NA_Sales <- as.numeric(data$NA_Sales)
+data <- bind_rows(data, fixeddata)
+str(data)
+```
+All the data seems to be in the right place
+
+### Missing value
+
+Notice that missing value are written as "N/a" in the dataset
+```{r}
+data %>%
+  filter(Name == "N/A"|Platform == "N/A"|Year == "N/A"|Genre == "N/A"|Publisher == "N/A"|NA_Sales == "N/A"|EU_Sales == "N/A"|JP_Sales == "N/A"|Other_Sales == "N/A"|Global_Sales == "N/A") %>%
+  summarize(n = n())
+```
+There are 306 missing value here. The missing value here are only 2% of the total number of data, so delete all these data will not have a huge impact to the final analysis.
+```{r}
+data <-
+  data %>%
+    filter(!(Name == "N/A"|Platform == "N/A"|Year == "N/A"|Genre == "N/A"|Publisher == "N/A"|NA_Sales == "N/A"|EU_Sales == "N/A"|JP_Sales == "N/A"|Other_Sales == "N/A"|Global_Sales == "N/A"))
+```
+### Outliers
+```{r}
+data %>%
+  ggplot(aes(x=Genre, y=Global_Sales)) +
+  scale_y_continuous(limits = c(0,1.5)) +
+  geom_boxplot()
+```
+
+Based on the boxplot we can see many outliers, but actually the difference of sales of games can be very large. For example, GTA may sales at the price at 200 dollars and lots of people will buy it, but some games made by small company may only sales for 20 dollars and people seldom buy them. Also, I'm not making machine learning models such as regression model or SVM model, I just want to describe the data and help the company to design the popular video games. So, I will not consder any of the points as the outliers. However, there are some obvious mistakes such as the dataset contains games after year 2017. These data should be considerd as outliers.
+```{r}
+data <- 
+  data %>%
+    filter(Year < 2017)
+```
+Now we get the cleaned dataset and ready to analyze.
+
+
+## The current situation of video games
+```{r}
+data %>%
+  group_by(Year) %>%
+  summarize(SumGlobalSales = sum(Global_Sales), SumNASales = sum(NA_Sales), SumEUSales = sum(EU_Sales), SumJPSales = sum(JP_Sales), SumOtherSales = sum(Other_Sales)) %>%
+  ggvis(x = ~Year, y = input_select(c(SumGlobalSales = "SumGlobalSales", sumNASales = "SumNASales", sumEUSales = "SumEUSales", SumJPSales = "SumJPSales", SumOtherSales = "SumOtherSales"), map = as.name)) %>% 
+  layer_lines() %>%
+  add_axis("x", properties = axis_props(labels = list(angle = 90)))
+```
+
+```{r}
+data %>%
+  group_by(Year) %>%
+  summarize(SumGlobalSales = sum(Global_Sales), SumNASales = sum(NA_Sales), SumEUSales = sum(EU_Sales), SumJPSales = sum(JP_Sales), SumOtherSales = sum(Other_Sales)) %>%
+  gather(area, sales, -Year) %>%
+  ggplot(aes(x=Year, y=sales, col=area, group = area)) +
+  geom_point() +
+  geom_line() +
+  theme(axis.text.x = element_text(angle = 90))
+```
+
+The sales of video games tends to decrease in Noth American, Europ, Japan and even global. We need to be careful about our design and make sure our video games can be successful in the market.
+
+## Which genre should we choose
+```{r}
+data %>%
+  group_by(Genre) %>%
+  summarize(TotalSales = sum(Global_Sales)) %>%
+  ggplot(aes(x=Genre, y=TotalSales)) +
+  geom_bar(aes(fill = Genre), stat = "identity", show.legend = F)
+```
+
+We can see that Action games sale the best in the past 20 years. Sports game and shooter game come after. But we also need to consider about which type of games is popular in recent years. Maybe Action games was popular in the past but not popular any more. Let's take a look at the sales of each genre per year and find the trend,
+
+```{r}
+data %>%
+  group_by(Genre, Year) %>%
+  summarize(TotalSales = sum(Global_Sales)) %>%
+  ggplot(aes(x=Year, y=TotalSales)) + 
+  geom_line(aes(group = 1)) +
+  scale_x_discrete(breaks = NULL) +
+  facet_wrap(~Genre)
+```
+
+It turns out every genre face the problem of decreasing revenue. This is because the total sales is decreasing. To better understand which type of games have the potential to dominate the video game market, we need to look at the percentage of revenue for each type of game (also known as market share)
+
+```{r}
+SaleByYear <- 
+  data %>%
+    group_by(Genre, Year) %>%
+    summarize(TotalSales = sum(Global_Sales)) %>%
+    group_by(Year)%>%
+    summarize(TS_Y = sum(TotalSales))
+data %>%
+  group_by(Genre, Year) %>%
+  summarize(TotalSales = sum(Global_Sales)) %>%
+  left_join(SaleByYear, by = "Year") %>%
+  mutate(SalesPercentage = TotalSales/TS_Y) %>%
+  ggplot(aes(x=Year, y=SalesPercentage)) + 
+  geom_line(aes(group = 1)) + 
+  scale_x_discrete(breaks = NULL) +
+  facet_wrap(~Genre)
+```
+
+This plot shows that Shooter and Sports game's market share are growing. Other game's market share are reducing. Even though Action game's market share is reducing, it still has a large market share. So based on the market share and total sales in the past 20 years, sports game is the best choice.
+
+## Which platform should we choose
+```{r}
+data %>%
+  group_by(Platform) %>%
+  summarize(TotalSales = sum(Global_Sales)) %>%
+  ggplot(aes(x=Platform, y=TotalSales)) +
+  geom_bar(aes(fill = Platform), stat = "identity", show.legend = F) +
+  theme(axis.text.x = element_text(angle = 90))
+SaleByYear <- 
+  data %>%
+  group_by(Platform, Year) %>%
+  summarize(TotalSales = sum(Global_Sales)) %>%
+  group_by(Year)%>%
+  summarize(TS_Y = sum(TotalSales))
+data %>%
+  group_by(Platform, Year) %>%
+  summarize(TotalSales = sum(Global_Sales)) %>%
+  left_join(SaleByYear, by = "Year") %>%
+  mutate(SalesPercentage = TotalSales/TS_Y) %>%
+  ggplot(aes(x=Year, y=SalesPercentage)) + 
+  geom_line(aes(group = 1)) + 
+  scale_x_discrete(breaks = NULL) +
+  facet_wrap(~Platform)
+```
+
+As we can see in the plot, although games launched on PS2 created a lot of revenue in the past 20 years, PS2's market share is decreasing. It is not wise to develop games launched on PS2. Some of the platform are extinct such as GB, DC, GBA, etc. We can find that PS4's market share grows sharply, it has the potential to dominate the market. Also PC has a very flat market share, which means games launched on PC have a low risk of losing money. 
+
+So, we decide to develop two version of the game. One is luanched on the PS4, the other is launched on PC.
+
+## Where should we launch the games
+```{r}
+data %>%
+  select(NA_Sales, EU_Sales, JP_Sales, Other_Sales) %>%
+  gather(Area, Sales, NA_Sales:Other_Sales) %>%
+  group_by(Area) %>%
+  summarize(TotalSales = sum(Sales)) %>%
+  ggplot(aes(x=Area, y=TotalSales)) + 
+  geom_bar(aes(fill = Area), stat = "identity", show.legend = F) +
+  ggtitle("Sales in different area")
+```
+
+People in the North America are more willing to buy games than in other area.
+
+## Colusion
+
+Based on the exploration of the video game dataset. Sports game launched on PC and PS4 firt releasing in North America will be the best choice for a video game company.
+
